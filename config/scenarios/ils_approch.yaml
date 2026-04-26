@@ -1,0 +1,113 @@
+scenario:
+  name: "ILS CAT I Approach"
+  duration_s: 120
+  time_scale: 1.0
+
+lrus:
+  - id: ADIRU_1
+    type: ADIRU
+    bus: CHANNEL_1
+    speed: HS
+    labels:
+      0o101: { rate_hz: 50, initial: 2.5 }     # Pitch
+      0o102: { rate_hz: 50, initial: -1.0 }     # Roll
+      0o103: { rate_hz: 25 }                    # True heading
+      0o203: { rate_hz: 25, initial: 3000.0 }   # Barometric altitude
+      0o204: { rate_hz: 25, initial: 140.0 }    # IAS
+      0o205: { rate_hz: 25, initial: 145.0 }    # TAS
+      0o206: { rate_hz: 25, initial: -700.0 }   # Vertical speed
+      0o210: { rate_hz: 25 }                    # Mach
+    subscribes:
+      - channel: CHANNEL_4
+        labels: [0o106, 0o107]    # cross-track + desired track from FMC
+      - channel: CHANNEL_3
+        labels: [0o164]           # radio altitude from RA (blend below 2500ft)
+      - channel: CHANNEL_5
+        labels: [0o013]           # Mode C altitude from XPDR (cross-check)
+
+  - id: ILS_1
+    type: ILS
+    bus: CHANNEL_2
+    speed: HS
+    labels:
+      0o173: { rate_hz: 25, initial: 0.01 }     # Localizer deviation
+      0o175: { rate_hz: 25, initial: 0.005 }    # Glideslope deviation
+    subscribes:
+      - channel: CHANNEL_4
+        labels: [0o031]           # selected altitude from FMC (GS intercept)
+
+  - id: RA_1
+    type: RA
+    bus: CHANNEL_3
+    speed: HS
+    labels:
+      0o164: { rate_hz: 25, initial: 2500.0 }   # Radio altitude
+      0o165: { rate_hz: 10 }                    # Decision height
+    subscribes:
+      - channel: CHANNEL_1
+        labels: [0o203]           # baro altitude from ADIRU (cross-check + sync)
+      - channel: CHANNEL_4
+        labels: [0o031]           # selected altitude from FMC (sets decision height)
+
+  - id: FMC_1
+    type: FMC
+    bus: CHANNEL_4
+    speed: HS
+    labels:
+      0o106: { rate_hz: 5 }   # Cross-track deviation
+      0o107: { rate_hz: 5 }   # Desired track
+      0o031: { rate_hz: 1 }   # Selected altitude
+    subscribes:
+      - channel: CHANNEL_1
+        labels: [0o203, 0o204, 0o103]   # altitude, IAS, heading from ADIRU
+      - channel: CHANNEL_2
+        labels: [0o173, 0o175]          # LOC, GS from ILS
+      - channel: CHANNEL_3
+        labels: [0o164]                 # radio alt from RA
+
+  - id: XPDR_1
+    type: ATC_XPDR
+    bus: CHANNEL_5
+    speed: HS
+    labels:
+      0o013: { rate_hz: 1 }   # Mode C altitude (BCD, 100ft steps)
+      0o031: { rate_hz: 1 }   # Selected altitude
+    subscribes:
+      - channel: CHANNEL_1
+        labels: [0o203]       # baro altitude from ADIRU for Mode C reporting
+
+phases:
+  - at_s: 0
+    state: APPROACH
+    params:
+      altitude_ft: 3000.0
+      vs_fpm: -700.0
+      ias_kts: 140.0
+      heading_deg: 270.0
+      ground_speed_kts: 135.0
+      track_deg: 270.0
+
+  - at_s: 60
+    state: FINAL
+    params:
+      altitude_ft: 1500.0
+      vs_fpm: -600.0
+      ias_kts: 130.0
+      heading_deg: 270.0
+
+faults:
+  - id: F001
+    type: SSM_FAILURE_WARNING
+    trigger_time_s: 80
+    duration_s: 10
+    lru: ILS_1
+    label: "0o173"
+    probability: 1.0
+
+  - id: F002
+    type: PARITY_ERROR
+    trigger_time_s: 90
+    duration_s: 5
+    lru: ADIRU_1
+    label: "0o203"
+    probability: 0.5

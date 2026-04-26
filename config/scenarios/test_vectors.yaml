@@ -1,0 +1,81 @@
+test_vectors:
+
+  - id: TV-001
+    description: "Barometric altitude nominal at approach start"
+    at_sim_time_s: 5
+    bus: CHANNEL_1
+    lru: ADIRU_1
+    label: "0o203"
+    expected:
+      ssm: "0b11"
+      value_min: 2500.0
+      value_max: 3500.0
+      units: ft
+      parity_ok: true
+    tolerance_pct: 2.0
+
+  - id: TV-002
+    description: "IAS within approach speed range"
+    at_sim_time_s: 5
+    bus: CHANNEL_1
+    lru: ADIRU_1
+    label: "0o204"
+    expected:
+      ssm: "0b11"
+      value_min: 120.0
+      value_max: 160.0
+      units: kts
+      parity_ok: true
+    tolerance_pct: 1.0
+
+  - id: TV-003
+    description: "Localizer deviation within limits before fault"
+    at_sim_time_s: 5
+    bus: CHANNEL_2
+    lru: ILS_1
+    label: "0o173"
+    expected:
+      ssm: "0b11"
+      value_min: -0.05
+      value_max: 0.05
+      parity_ok: true
+    tolerance_pct: 5.0
+
+  - id: TV-004
+    description: "Pitch attitude normal during approach"
+    at_sim_time_s: 10
+    bus: CHANNEL_1
+    lru: ADIRU_1
+    label: "0o101"
+    expected:
+      ssm: "0b11"
+      value_min: -5.0
+      value_max: 10.0
+      units: deg
+      parity_ok: true
+    tolerance_pct: 1.0
+
+  - id: TV-005
+    description: "ILS LOC failure warning active during fault window"
+    at_sim_time_s: 83
+    bus: CHANNEL_2
+    lru: ILS_1
+    label: "0o173"
+    expected:
+      ssm: "0b00"
+      parity_ok: true
+    tolerance_pct: 0.0
+    window_us: 5000000
+
+  - id: TV-006
+    description: "Altitude decreasing - word count check via value at t=60"
+    at_sim_time_s: 62
+    bus: CHANNEL_1
+    lru: ADIRU_1
+    label: "0o203"
+    expected:
+      ssm: "0b11"
+      value_min: 800.0
+      value_max: 3000.0
+      parity_ok: true
+    tolerance_pct: 2.0
