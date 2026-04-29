@@ -34,6 +34,17 @@ def cmd_run(args):
         print(f"[main] Loading test vectors: {args.vectors}")
         sim.load_test_vectors(args.vectors)
 
+    # ── Ethernet transmitter (optional) ───────────────────────────────────
+    eth_tx = None
+    if args.eth:
+        from src.network.transmitter import EthernetTransmitter
+        host, _, port_str = args.eth.partition(":")
+        port = int(port_str) if port_str else 5429
+        eth_tx = EthernetTransmitter(host=host, port=port)
+        eth_tx.connect()
+        sim.add_listener(eth_tx.send)
+        print(f"[main] Ethernet transmitter active → {host}:{port}")
+
     sim.run(duration_s=args.duration)  # None = use YAML value
     sim.print_monitor_table()
 
@@ -45,6 +56,9 @@ def cmd_run(args):
 
     if args.bin:
         sim.logger.to_binary(args.bin)
+
+    if eth_tx:
+        eth_tx.close()
 
 
 def cmd_demo(args):
@@ -235,6 +249,8 @@ Examples:
                        help="Export logged words to binary format")
     p_run.add_argument("--duration", metavar="SECONDS", type=float, default=None,
                        help="Override scenario duration (e.g. --duration 30)")
+    p_run.add_argument("--eth", metavar="HOST:PORT", default=None,
+                       help="Send words over Ethernet to receiver (e.g. 192.168.1.50:5429)")
 
     # ── demo ─────────────────────────────────────────────────────────────
     sub.add_parser("demo", help="Run built-in 10-second ILS approach demo")
